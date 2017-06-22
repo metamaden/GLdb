@@ -27,20 +27,21 @@
                     ( SELECT colonoscopies.patient_id,
                             colonoscopies.encounter_date,
                             count((polyps.encounter_date || '-'::text) || polyps.patient_id::text) AS n_polyps
-                           FROM gldata.colonoscopies
-                             LEFT JOIN gldata.polyps ON colonoscopies.patient_id::text = polyps.patient_id::text AND colonoscopies.encounter_date = polyps.encounter_date
-                          GROUP BY colonoscopies.patient_id, colonoscopies.encounter_date
-                          ORDER BY colonoscopies.patient_id, colonoscopies.encounter_date) n_polyps
-                  WHERE patients_1.patient_id::text = glcol.patient_id::text 
-                 AND patients_1.patient_id::text = n_polyps.patient_id::text 
-                 AND glcol.encounter_date = n_polyps.encounter_date
-                AND glcol.patient_id IN ( SELECT colonoscopies.patient_id 		
-												FROM gldata.colonoscopies 
-												WHERE index='T'
-   		 										AND colonoscopies.total_polyps_reported >= 2)
-                ) colnage
-          
-     WHERE colnage.age_yrs >= 0::double precision 		
-     AND colnage.n_polyps_recorded >= 0     
-     GROUP BY colnage.patient_id, colnage.patient_dob) temppat
-     WHERE patients.patient_id::text = temppat.patient_id::text AND temppat.num_encounters >= 0;
+                        FROM gldata.colonoscopies
+		     		LEFT JOIN gldata.polyps 
+		     		ON colonoscopies.patient_id::text = polyps.patient_id::text 
+		     		AND colonoscopies.encounter_date = polyps.encounter_date
+                        GROUP BY colonoscopies.patient_id, colonoscopies.encounter_date
+                        ORDER BY colonoscopies.patient_id, colonoscopies.encounter_date) n_polyps
+		 	WHERE patients_1.patient_id::text = glcol.patient_id::text 
+                 		AND patients_1.patient_id::text = n_polyps.patient_id::text 
+                		AND glcol.encounter_date = n_polyps.encounter_date
+                	AND glcol.patient_id IN ( SELECT colonoscopies.patient_id 		
+							FROM gldata.colonoscopies 
+							WHERE index='T'
+   		 					AND colonoscopies.total_polyps_reported >= 2) /* FILTER ON TOTAL NUMBER OF POLYPS AT INDEX */
+		) AS colnage
+     WHERE colnage.age_yrs >= 0::double precision /* FILTER ON MINIMUM AGE AT ENCOUNTER */ 		
+     AND colnage.n_polyps_recorded >= 0 /* FILTER ON MINIMUM NUMBER OF POLYPS AT ENCOUNTER */     
+     GROUP BY colnage.patient_id, colnage.patient_dob) temppat 
+     WHERE patients.patient_id::text = temppat.patient_id::text AND temppat.num_encounters >= 0; /* FILTER ON MINIMUM NUMBER OF ENCOUNTERS*/
