@@ -6,14 +6,14 @@
     temppat.total_polyps_reported,
     temppat.index_id
    FROM gldata.patients,
-    ( SELECT colnage.patient_id,
-            colnage.patient_dob,
-            array_agg(colnage.age_yrs) AS encounter_ages,
-            array_agg(colnage.encounter_date) AS encounter_dates,
-            array_agg(colnage.n_polyps_recorded) AS polyps_recorded_by_encounter,
-            count(colnage.encounter_date) AS num_encounters,
-            array_agg(colnage.total_polyps_reported) AS total_polyps_reported,
-     array_agg(colnage.index) AS index_id
+    ( SELECT colnage.patient_id,            
+     	colnage.patient_dob,    
+     	array_agg(colnage.age_yrs) AS encounter_ages,            
+     	array_agg(colnage.encounter_date) AS encounter_dates,            
+     	array_agg(colnage.n_polyps_recorded) AS polyps_recorded_by_encounter,            
+     	count(colnage.encounter_date) AS num_encounters,
+        array_agg(colnage.total_polyps_reported) AS total_polyps_reported,
+     	array_agg(colnage.index) AS index_id
            FROM ( SELECT glcol.patient_id,
                     patients_1.dob AS patient_dob,
                     age(glcol.encounter_date::timestamp with time zone, patients_1.dob::timestamp with time zone) AS age,
