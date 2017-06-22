@@ -12,7 +12,9 @@
             array_agg(colnage.n_polyps_recorded) AS polyps_recorded_by_encounter,
             count(colnage.encounter_date) AS num_encounters,
             array_agg(colnage.total_polyps_reported) AS total_polyps_reported
-           FROM ( SELECT glcol.patient_id,
+           FROM 
+     /* MAKE TEMP TABLE HAVING AGE AT ENCOUNTER, ENCOUNTERS COUNT, POLYPS REPORTED COUNT, ETC. */
+               ( SELECT glcol.patient_id,
                     patients_1.dob AS patient_dob,
                     age(glcol.encounter_date::timestamp with time zone, patients_1.dob::timestamp with time zone) AS age,
                     date_part('year'::text, age(glcol.encounter_date::timestamp with time zone, patients_1.dob::timestamp with time zone)) AS age_yrs,
@@ -25,10 +27,15 @@
                             colonoscopies.encounter_date,
                             count((polyps.encounter_date || '-'::text) || polyps.patient_id::text) AS n_polyps
                            FROM gldata.colonoscopies
-                             LEFT JOIN gldata.polyps ON colonoscopies.patient_id::text = polyps.patient_id::text AND colonoscopies.encounter_date = polyps.encounter_date
+                             LEFT JOIN gldata.polyps ON colonoscopies.patient_id::text = polyps.patient_id::text 
+                             AND colonoscopies.encounter_date = polyps.encounter_date
                           GROUP BY colonoscopies.patient_id, colonoscopies.encounter_date
                           ORDER BY colonoscopies.patient_id, colonoscopies.encounter_date) n_polyps
-                  WHERE patients_1.patient_id::text = glcol.patient_id::text AND patients_1.patient_id::text = n_polyps.patient_id::text AND glcol.encounter_date = n_polyps.encounter_date) colnage
-          WHERE colnage.age_yrs >= 20::double precision AND colnage.n_polyps_recorded >= 1
+                  WHERE patients_1.patient_id::text = glcol.patient_id::text 
+                  AND patients_1.patient_id::text = n_polyps.patient_id::text 
+                  AND glcol.encounter_date = n_polyps.encounter_date) colnage
+          WHERE colnage.age_yrs >= 20::double precision       /* FILTER MINIMUM AGE AT ENCOUNTER*/
+          AND colnage.n_polyps_recorded >= 1                  /* FILTER MINIMUM NUMBER OF POLYPS ACROSS ENCOUNTERS */
           GROUP BY colnage.patient_id, colnage.patient_dob) temppat
-  WHERE patients.patient_id::text = temppat.patient_id::text AND temppat.num_encounters >= 1;
+  WHERE patients.patient_id::text = temppat.patient_id::text 
+  AND temppat.num_encounters >= 1;                            /* FILTER TOTAL NUMBER OF ENCOUNTERS LEFT AFTER ABOVE FILTERS */
