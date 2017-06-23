@@ -1,2 +1,2 @@
 # GLdb
-PostgreSQL database backup
+Test database backup. 
